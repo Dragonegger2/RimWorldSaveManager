@@ -39,13 +39,22 @@ public class Main extends Application {
         grid.setPadding(new Insets(25,25,25,25));
         grid.setGridLinesVisible(true);
 
-        Label saveFileLocationLabel = new Label("Save location: ");
+        Label saveFileLocationLabel = new Label("RimWorld Save Folder: ");
         saveFileLocationLabel.setFont(Font.font("Tahoma", FontWeight.NORMAL, 15));
         grid.add(saveFileLocationLabel,0,0);
 
         TextField saveFileLocation = new TextField();
         saveFileLocation.setText(pathToWindowsFolder );
         grid.add(saveFileLocation, 1,0);
+
+
+        Label managedSaveLabel = new Label("RWSM Folder: ");
+        saveFileLocationLabel.setFont(Font.font("Tahoma", FontWeight.NORMAL, 15));
+        grid.add(managedSaveLabel,0,1);
+
+        TextField rwsmLocation = new TextField();
+        rwsmLocation.setText(pathToWindowsFolder );
+        grid.add(rwsmLocation, 1,1);
 
         DirectoryChooser saveFileLocationDirectoryChooser = new DirectoryChooser();
         saveFileLocationDirectoryChooser.setInitialDirectory(new File(pathToWindowsFolder));
@@ -90,7 +99,7 @@ public class Main extends Application {
         }
 
         managedSaves.setItems(saves);
-        grid.add(managedSaves, 0, 1, 3, 2);
+        grid.add(managedSaves, 0, 2, 3, 2);
         primaryStage.show();
     }
 
