@@ -93,7 +93,6 @@ public class Main extends Application {
         grid.setHgap(10);
         grid.setVgap(10);
         grid.setPadding(new Insets(25,25,25,25));
-        //grid.setGridLinesVisible(true);
 
         Label saveFileLocationLabel = new Label("RimWorld Save Folder: ");
         saveFileLocationLabel.setFont(Font.font("Tahoma", FontWeight.NORMAL, 12));
@@ -104,64 +103,21 @@ public class Main extends Application {
         TextField saveFileLocationTxt = new TextField();
         saveFileLocationTxt.setText(PathToWindowsFolder());
         saveFileLocationTxt.setPrefWidth(800);
+
         TextField rwsmLocationTxt = new TextField();
         rwsmLocationTxt.setText(GetCurrentExecutionPath().toString());
 
-        Button saveLocationDir = new Button("...");
+        Button saveLocationDir = new UpdateListButton(listOfSavesFromTheRimWorldSaveFolder, saveFileLocationTxt, primaryStage);
+        saveLocationDir.setText("...");
         saveLocationDir.setTooltip(new Tooltip("Open the directory picker to find the save folder for RimWorld"));
 
-        Button managedSaveLocationDirPicker = new Button("...");
+        Button managedSaveLocationDirPicker = new UpdateListButton(listOfSavesFromTheManagerFolder, rwsmLocationTxt, primaryStage);
+        managedSaveLocationDirPicker.setText("...");
         managedSaveLocationDirPicker.setTooltip(new Tooltip("Open the directory picker to find the location of your managed saves."));
 
-        saveLocationDir.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                DirectoryChooser directoryChooser = new DirectoryChooser();
-                try {
-                    //Create directory:
-                    File pathToRWSaveFolder = new File(PathToWindowsFolder());
-                    if(pathToRWSaveFolder.mkdirs()) {
-                        System.out.println("Folder was not present. It has been created.");
-                    }
-                    directoryChooser.setInitialDirectory(pathToRWSaveFolder);
-                    File selectedDirectory = directoryChooser.showDialog(primaryStage);
-                    saveFileLocationTxt.setText(selectedDirectory.getPath());
-                }
-                catch(SecurityException e) {
-                    System.out.println("Try running this jar file as administrator.");
-                }
-                catch(IllegalArgumentException e) {
-                    System.out.println("Folder does not exist or could not be created.");
-                }
-            }
-        });
-
-        managedSaveLocationDirPicker.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-
-                DirectoryChooser directoryChooser = new DirectoryChooser();
-                directoryChooser.setInitialDirectory(new File(GetCurrentExecutionPath().toString()));
-                directoryChooser.setTitle("RimWorld Save Manager Save Location");
-
-                try {
-                    File selectedDirectory = directoryChooser.showDialog(primaryStage);
-                    rwsmLocationTxt.setText(selectedDirectory.getPath());
-                }
-                catch(IllegalArgumentException e) {
-                    System.out.println("Directory does not exist.");
-                    directoryChooser.setInitialDirectory(new File(Main.class.getProtectionDomain().getCodeSource().getLocation().getPath()));
-                    File selectedDirectory = directoryChooser.showDialog(primaryStage);
-                    rwsmLocationTxt.setText(selectedDirectory.getPath());
-
-                    //TODO: Set the status in the bottom with appropriate warning.
-                    //TODO: Look into creating a StatusBar to reflect what is happening with the program.
-                }
-                catch(NullPointerException e) {
-                    //This typically means that cancel was hit when selecting a directory.
-                }
-            }
-        });
+        //Add folder picker logic to these.
+//        saveLocationDir.setOnAction(new LocationSelectorEventHandler(primaryStage, saveFileLocationTxt));
+//        managedSaveLocationDirPicker.setOnAction(new LocationSelectorEventHandler(primaryStage, rwsmLocationTxt));
 
         File managedSaveFolder = SetupSaveManagerFolder();
         List<File> gameSaves = WalkManagedSaveFolder(managedSaveFolder);
@@ -257,7 +213,48 @@ public class Main extends Application {
         String username = System.getProperty("user.name");
         return pathWithoutUser.replace("%username%", username);
     }
+
     public static void main(String[] args) {
         launch(args);
     }
+
+    /**
+     * Class that represents the logic required to setup and display a directory chooser.
+     * It is written this way to abstract the logic the two components require (the two textboxes and button groups).
+     */
+    public class LocationSelectorEventHandler implements EventHandler<ActionEvent> {
+
+        private TextField elementToBeUpdated;
+        private String pathToFolderAccessing;
+        private Stage rootParent;
+        public LocationSelectorEventHandler(Stage rootParent, TextField fieldToBeUpdated) {
+            elementToBeUpdated = fieldToBeUpdated;
+            pathToFolderAccessing = fieldToBeUpdated.getText();
+            this.rootParent = rootParent;
+        }
+
+        @Override
+        public void handle(ActionEvent event) {
+            DirectoryChooser directoryChooser = new DirectoryChooser();
+            try {
+                //Create directory:
+                File pathToRWSaveFolder = new File(pathToFolderAccessing);
+                if(pathToRWSaveFolder.mkdirs()) {
+                    System.out.println("Folder was not present. It has been created.");
+                }
+
+                directoryChooser.setInitialDirectory(pathToRWSaveFolder);
+                File selectedDirectory = directoryChooser.showDialog(rootParent);
+                elementToBeUpdated.setText(selectedDirectory.getPath());
+            }
+            catch(SecurityException e) {
+                System.out.println("Try running this jar file as administrator.");
+            }
+            catch(IllegalArgumentException e) {
+                System.out.println("Folder does not exist or could not be created.");
+            }
+        }
+    }
+
 }
+
