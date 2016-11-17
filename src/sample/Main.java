@@ -40,53 +40,71 @@ public class Main extends Application {
         grid.setGridLinesVisible(true);
 
         Label saveFileLocationLabel = new Label("RimWorld Save Folder: ");
-        saveFileLocationLabel.setFont(Font.font("Tahoma", FontWeight.NORMAL, 15));
-        grid.add(saveFileLocationLabel,0,0);
-
-        TextField saveFileLocation = new TextField();
-        saveFileLocation.setText(pathToWindowsFolder );
-        grid.add(saveFileLocation, 1,0);
-
+        saveFileLocationLabel.setFont(Font.font("Tahoma", FontWeight.NORMAL, 12));
 
         Label managedSaveLabel = new Label("RWSM Folder: ");
-        saveFileLocationLabel.setFont(Font.font("Tahoma", FontWeight.NORMAL, 15));
-        grid.add(managedSaveLabel,0,1);
+        managedSaveLabel.setFont(Font.font("Tahoma", FontWeight.NORMAL, 12));
 
-        TextField rwsmLocation = new TextField();
-        rwsmLocation.setText(pathToWindowsFolder );
-        grid.add(rwsmLocation, 1,1);
-
-        DirectoryChooser saveFileLocationDirectoryChooser = new DirectoryChooser();
-        saveFileLocationDirectoryChooser.setInitialDirectory(new File(pathToWindowsFolder));
+        TextField saveFileLocationTxt = new TextField();
+        saveFileLocationTxt.setText(pathToWindowsFolder );
+        saveFileLocationTxt.setPrefWidth(800);
+        TextField rwsmLocationTxt = new TextField();
+        rwsmLocationTxt.setText(GetCurrentExecutionPath().toString());
 
         Button saveLocationDir = new Button("...");
         saveLocationDir.setTooltip(new Tooltip("Open the directory picker to find the save folder for RimWorld"));
+
+        Button managedSaveLocationDirPicker = new Button("...");
+        managedSaveLocationDirPicker.setTooltip(new Tooltip("Open the directory picker to find the location of your managed saves."));
 
         saveLocationDir.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
                 System.out.println("Opening the folder directory.");
+                DirectoryChooser directoryChooser = new DirectoryChooser();
+                directoryChooser.setInitialDirectory(new File(pathToWindowsFolder));
+
                 try {
-                    File selectedDirectory = saveFileLocationDirectoryChooser.showDialog(primaryStage);
-                    System.out.println(selectedDirectory.getPath());
-                    saveFileLocation.setText(selectedDirectory.getPath());
+
+
+                    File selectedDirectory = directoryChooser.showDialog(primaryStage);
+                    saveFileLocationTxt.setText(selectedDirectory.getPath());
                 }
                 catch(IllegalArgumentException e) {
                     System.out.println("Directory does not exist.");
-                    saveFileLocationDirectoryChooser.setInitialDirectory(new File(Main.class.getProtectionDomain().getCodeSource().getLocation().getPath()));
-                    File selectedDirectory = saveFileLocationDirectoryChooser.showDialog(primaryStage);
-                    System.out.println(selectedDirectory.getPath());
-                    saveFileLocation.setText(selectedDirectory.getPath());
+                    directoryChooser.setInitialDirectory(new File(Main.class.getProtectionDomain().getCodeSource().getLocation().getPath()));
+                    File selectedDirectory = directoryChooser.showDialog(primaryStage);
+                    saveFileLocationTxt.setText(selectedDirectory.getPath());
 
                     //TODO: Set the status in the bottom with appropriate warning.
                     //TODO: Look into creating a StatusBar to reflect what is happening with the program.
                 }
             }
         });
+        managedSaveLocationDirPicker.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                System.out.println("Opening the folder directory.");
 
-        grid.add(saveLocationDir, 2, 0);
+                DirectoryChooser directoryChooser = new DirectoryChooser();
+                directoryChooser.setInitialDirectory(new File(GetCurrentExecutionPath().toString()));
+                directoryChooser.setTitle("RimWorld Save Manager Save Location");
 
-        primaryStage.setScene(new Scene(grid, 450, 275));
+                try {
+                    File selectedDirectory = directoryChooser.showDialog(primaryStage);
+                    rwsmLocationTxt.setText(selectedDirectory.getPath());
+                }
+                catch(IllegalArgumentException e) {
+                    System.out.println("Directory does not exist.");
+                    directoryChooser.setInitialDirectory(new File(Main.class.getProtectionDomain().getCodeSource().getLocation().getPath()));
+                    File selectedDirectory = directoryChooser.showDialog(primaryStage);
+                    rwsmLocationTxt.setText(selectedDirectory.getPath());
+
+                    //TODO: Set the status in the bottom with appropriate warning.
+                    //TODO: Look into creating a StatusBar to reflect what is happening with the program.
+                }
+            }
+        });
 
         File managedSaveFolder = SetupSaveManagerFolder();
         List<File> gameSaves = WalkManagedSaveFolder(managedSaveFolder);
@@ -99,7 +117,21 @@ public class Main extends Application {
         }
 
         managedSaves.setItems(saves);
-        grid.add(managedSaves, 0, 2, 3, 2);
+
+        //RimWorld Save Stuff.
+        grid.add(saveFileLocationLabel,0,0, 1, 1);
+        grid.add(saveFileLocationTxt, 1,0, 4, 1);
+        grid.add(saveLocationDir,5,0,1,1);
+
+        //RimWorld Save Manager Stuff.
+        grid.add(managedSaveLabel,0,1);
+        grid.add(rwsmLocationTxt, 1, 1, 4, 1);
+        grid.add(managedSaveLocationDirPicker,5,1,1,1);
+
+        //Managed Saves.
+        //grid.add(managedSaves, 0, 2, 3, 2);
+        primaryStage.setScene(new Scene(grid, 800, 480));
+
         primaryStage.show();
     }
 
@@ -111,9 +143,7 @@ public class Main extends Application {
      * Returns true if the directory already existed (means there might be files there.)
      */
     private File SetupSaveManagerFolder() {
-        //Get the location the JAR/application was initialized.
-        URL locationOfSaveFolder = Main.class.getProtectionDomain().getCodeSource().getLocation();
-        File saveFolder = new File(locationOfSaveFolder.getPath() + "rwSaves");
+        File saveFolder = new File(GetCurrentExecutionPath() + "rwSaves");
 
         try {
             if(saveFolder.mkdir()) {
@@ -153,6 +183,14 @@ public class Main extends Application {
             System.out.println("ManagedSaveFolder disappeared.");
         }
         return null;
+    }
+
+    /***
+     * Single point of failure for getting the execution path.
+     * @return
+     */
+    private File GetCurrentExecutionPath() {
+        return new File(Main.class.getProtectionDomain().getCodeSource().getLocation().getPath());
     }
 
     public static void main(String[] args) {
