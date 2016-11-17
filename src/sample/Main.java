@@ -9,7 +9,10 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Pane;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.DirectoryChooser;
@@ -25,11 +28,16 @@ import java.util.Vector;
 
 public class Main extends Application {
     private String pathWithoutUser = "C:\\Users\\%username%\\AppData\\LocalLow\\Ludeon Studios\\RimWorld";
+
+    private ListView<String> listOfSavesFromTheRimWorldSaveFolder = new ListView<>();
+    private ListView<String> listOfSavesFromTheManagerFolder = new ListView<>();
+
     @Override
     public void start(Stage primaryStage) throws Exception{
         primaryStage.setTitle("RimWorld Save Manager");
 
         GridPane folderManagement = folderManagementGrid(primaryStage);
+        Pane saveManagement = saveManagementGrid(primaryStage);
 
         GridPane containerPane = new GridPane();
         containerPane.setAlignment(Pos.TOP_CENTER);
@@ -37,12 +45,12 @@ public class Main extends Application {
         containerPane.setVgap(10);
         containerPane.setPadding(new Insets(25,25,25,25));
         containerPane.setGridLinesVisible(true);
-        containerPane.add(folderManagement,0,0);
 
+        containerPane.add(folderManagement,0,0);
+        containerPane.add(saveManagement,0,1);
 
         //Managed Saves.
-        //grid.add(managedSaves, 0, 2, 3, 2);
-        primaryStage.setScene(new Scene(containerPane, 800, 480));
+        primaryStage.setScene(new Scene(containerPane));
 
         primaryStage.show();
     }
@@ -108,34 +116,29 @@ public class Main extends Application {
         saveLocationDir.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
-                System.out.println("Opening the folder directory.");
                 DirectoryChooser directoryChooser = new DirectoryChooser();
-                directoryChooser.setInitialDirectory(new File(PathToWindowsFolder()));
-
                 try {
-
-
+                    //Create directory:
+                    File pathToRWSaveFolder = new File(PathToWindowsFolder());
+                    if(pathToRWSaveFolder.mkdirs()) {
+                        System.out.println("Folder was not present. It has been created.");
+                    }
+                    directoryChooser.setInitialDirectory(pathToRWSaveFolder);
                     File selectedDirectory = directoryChooser.showDialog(primaryStage);
                     saveFileLocationTxt.setText(selectedDirectory.getPath());
+                }
+                catch(SecurityException e) {
+                    System.out.println("Try running this jar file as administrator.");
                 }
                 catch(IllegalArgumentException e) {
-                    System.out.println("Directory does not exist.");
-                    directoryChooser.setInitialDirectory(new File(Main.class.getProtectionDomain().getCodeSource().getLocation().getPath()));
-                    File selectedDirectory = directoryChooser.showDialog(primaryStage);
-                    saveFileLocationTxt.setText(selectedDirectory.getPath());
-
-                    //TODO: Set the status in the bottom with appropriate warning.
-                    //TODO: Look into creating a StatusBar to reflect what is happening with the program.
-                }
-                catch(NullPointerException e) {
-                    //This typically means that cancel was hit when selecting a directory.
+                    System.out.println("Folder does not exist or could not be created.");
                 }
             }
         });
+
         managedSaveLocationDirPicker.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
-                System.out.println("Opening the folder directory.");
 
                 DirectoryChooser directoryChooser = new DirectoryChooser();
                 directoryChooser.setInitialDirectory(new File(GetCurrentExecutionPath().toString()));
@@ -183,6 +186,39 @@ public class Main extends Application {
         grid.add(managedSaveLocationDirPicker,5,1,1,1);
 
         return grid;
+    }
+
+    private GridPane saveManagementGrid(Stage primaryStage) {
+        GridPane saveManagement = new GridPane();
+        saveManagement.setPadding(new Insets(25,25,25,25));
+        saveManagement.setAlignment(Pos.CENTER);
+        Button moveSaveGameToManagedFolder = new Button("->");
+        moveSaveGameToManagedFolder.setAlignment(Pos.CENTER);
+
+        Button moveSavedGameToSaveFolder = new Button("<-");
+        moveSavedGameToSaveFolder.setAlignment(Pos.TOP_CENTER);
+
+        double listWidth = 300;
+
+        ColumnConstraints listColumn= new ColumnConstraints();
+        listColumn.setPercentWidth(47.5);
+        ColumnConstraints arrowColumn = new ColumnConstraints();
+        arrowColumn.setPercentWidth(10);
+
+        saveManagement.getColumnConstraints().addAll(listColumn, arrowColumn, listColumn);
+        listOfSavesFromTheManagerFolder.setMinWidth(listWidth);
+        listOfSavesFromTheRimWorldSaveFolder.setMinWidth(listWidth);
+
+        GridPane buttonLayoutPane = new GridPane();
+        buttonLayoutPane.setAlignment(Pos.CENTER);
+
+        buttonLayoutPane.add(moveSaveGameToManagedFolder, 0,0);
+        buttonLayoutPane.add(moveSavedGameToSaveFolder, 0, 2);
+        saveManagement.add(buttonLayoutPane, 1,0, 1,3);
+        saveManagement.add(listOfSavesFromTheRimWorldSaveFolder, 0,0, 1, 3);
+        saveManagement.add(listOfSavesFromTheManagerFolder, 2 ,0, 1, 3);
+
+        return saveManagement;
     }
 
     /**
