@@ -87,6 +87,9 @@ public class Main extends Application {
      * @return
      */
     private GridPane folderManagementGrid(Stage primaryStage) {
+        //Allow multiple selections.
+        listOfSavesFromTheManagerFolder.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        listOfSavesFromTheRimWorldSaveFolder.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
         GridPane grid = new GridPane();
         grid.setAlignment(Pos.TOP_CENTER);
@@ -107,29 +110,19 @@ public class Main extends Application {
         TextField rwsmLocationTxt = new TextField();
         rwsmLocationTxt.setText(GetCurrentExecutionPath().toString());
 
-        Button saveLocationDir = new UpdateListButton(listOfSavesFromTheRimWorldSaveFolder, saveFileLocationTxt, primaryStage);
+        UpdateListButton saveLocationDir = new UpdateListButton(listOfSavesFromTheRimWorldSaveFolder, saveFileLocationTxt, primaryStage);
         saveLocationDir.setText("...");
         saveLocationDir.setTooltip(new Tooltip("Open the directory picker to find the save folder for RimWorld"));
 
-        Button managedSaveLocationDirPicker = new UpdateListButton(listOfSavesFromTheManagerFolder, rwsmLocationTxt, primaryStage);
+        UpdateListButton managedSaveLocationDirPicker = new UpdateListButton(listOfSavesFromTheManagerFolder, rwsmLocationTxt, primaryStage);
         managedSaveLocationDirPicker.setText("...");
         managedSaveLocationDirPicker.setTooltip(new Tooltip("Open the directory picker to find the location of your managed saves."));
 
-        //Add folder picker logic to these.
-//        saveLocationDir.setOnAction(new LocationSelectorEventHandler(primaryStage, saveFileLocationTxt));
-//        managedSaveLocationDirPicker.setOnAction(new LocationSelectorEventHandler(primaryStage, rwsmLocationTxt));
-
+        //Create the initial folder if it does not exist already.
         File managedSaveFolder = SetupSaveManagerFolder();
-        List<File> gameSaves = WalkManagedSaveFolder(managedSaveFolder);
 
-        ListView managedSaves = new ListView();
-        ObservableList saves = FXCollections.observableArrayList();
-
-        for( File save : gameSaves ) {
-            saves.add(save.getName());
-        }
-
-        managedSaves.setItems(saves);
+        saveLocationDir.UpdateList();
+        managedSaveLocationDirPicker.UpdateList();
 
         //RimWorld Save Stuff.
         grid.add(saveFileLocationLabel,0,0, 1, 1);
@@ -177,30 +170,6 @@ public class Main extends Application {
         return saveManagement;
     }
 
-    /**
-     * Creates a list of files with full path.
-     *
-     * @param managedSaveFolder
-     * @return Collection of files that are going to be displayed and are currently stored in the manaaged save folder.
-     */
-    private List<File> WalkManagedSaveFolder(File managedSaveFolder) {
-        try {
-            List<File> managedSaves = new Vector();
-
-
-            Files.walk(managedSaveFolder.toPath())
-                    .filter(Files::isRegularFile)
-                    .forEach(save -> managedSaves.add(save.toFile()));
-
-            //managedSaves.get(0).getName();
-            return managedSaves;
-        }
-        catch (IOException e) {
-            System.out.println("ManagedSaveFolder disappeared.");
-        }
-        return null;
-    }
-
     /***
      * Single point of failure for getting the execution path.
      * @return
@@ -217,44 +186,5 @@ public class Main extends Application {
     public static void main(String[] args) {
         launch(args);
     }
-
-    /**
-     * Class that represents the logic required to setup and display a directory chooser.
-     * It is written this way to abstract the logic the two components require (the two textboxes and button groups).
-     */
-    public class LocationSelectorEventHandler implements EventHandler<ActionEvent> {
-
-        private TextField elementToBeUpdated;
-        private String pathToFolderAccessing;
-        private Stage rootParent;
-        public LocationSelectorEventHandler(Stage rootParent, TextField fieldToBeUpdated) {
-            elementToBeUpdated = fieldToBeUpdated;
-            pathToFolderAccessing = fieldToBeUpdated.getText();
-            this.rootParent = rootParent;
-        }
-
-        @Override
-        public void handle(ActionEvent event) {
-            DirectoryChooser directoryChooser = new DirectoryChooser();
-            try {
-                //Create directory:
-                File pathToRWSaveFolder = new File(pathToFolderAccessing);
-                if(pathToRWSaveFolder.mkdirs()) {
-                    System.out.println("Folder was not present. It has been created.");
-                }
-
-                directoryChooser.setInitialDirectory(pathToRWSaveFolder);
-                File selectedDirectory = directoryChooser.showDialog(rootParent);
-                elementToBeUpdated.setText(selectedDirectory.getPath());
-            }
-            catch(SecurityException e) {
-                System.out.println("Try running this jar file as administrator.");
-            }
-            catch(IllegalArgumentException e) {
-                System.out.println("Folder does not exist or could not be created.");
-            }
-        }
-    }
-
 }
 
